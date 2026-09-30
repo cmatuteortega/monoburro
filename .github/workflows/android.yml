@@ -1,0 +1,78 @@
+name: Android
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# contents: write only to refresh the "debug-latest" prerelease with the APK.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # versionCode goes up with every run; versionName is the last git tag
+      # (v1.2.0 -> 1.2.0) plus what's on top, or the commit if there are none.
+      VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Version
+        run: echo "VERSION_NAME=$(git describe --tags --always --exclude 'debug-*' | sed 's/^v//')" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # First: if a test or lint fails, nothing is built or uploaded.
+      - name: Tests
+        run: ./gradlew testDebugUnitTest --stacktrace
+
+      - name: Lint
+        run: ./gradlew lintDebug
+
+      - name: Test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: |
+            app/build/reports/tests/testDebugUnitTest/
+            app/build/reports/lint-results-debug.html
+          if-no-files-found: ignore
+
+      - name: Build debug APK
+        run: >
+          ./gradlew assembleDebug --stacktrace
+          -Pmonoburro.versionCode=$VERSION_CODE -Pmonoburro.versionName=$VERSION_NAME
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk "monoburro-debug.apk"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: monoburro-debug.apk
+
+      # A stable download link for testing on a phone (no zip, no Actions tab):
+      # https://github.com/<owner>/<repo>/releases/download/debug-latest/monoburro-debug.apk
+      # Refreshed on every push; pull requests only get the artifact.
+      - name: Publish to the debug-latest prerelease
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete debug-latest --cleanup-tag --yes || true
+          gh release create debug-latest monoburro-debug.apk \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Debug build $VERSION_NAME (#$VERSION_CODE)" \
+            --notes "Debug APK from \`${GITHUB_REF_NAME}\` at ${GITHUB_SHA::7}. Install on Android (allow installs from unknown sources)."
