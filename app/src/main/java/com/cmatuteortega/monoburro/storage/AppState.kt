@@ -1,5 +1,6 @@
 package com.cmatuteortega.monoburro.storage
 
+import com.cmatuteortega.monoburro.model.Mode
 import com.cmatuteortega.monoburro.model.Proposal
 import com.cmatuteortega.monoburro.model.UserPrefs
 import kotlinx.serialization.Serializable
@@ -24,4 +25,10 @@ data class AppState(
     val keepSwiping: Boolean = false,
     val chosen: Proposal? = null,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    /** Picked on the landing screen; null shows the landing. */
+    val mode: Mode? = null,
+    /** Last subscription status Google Play reported, so Mono survives an offline start. */
+    val monoEntitled: Boolean = false,
+    /** Debug builds only: a simulated Mono purchase, since sideloaded APKs can't buy from Play. */
+    val debugMono: Boolean = false,
 )

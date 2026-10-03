@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- No INTERNET permission: the MVP keeps everything on the phone. -->
+    <!-- No INTERNET permission: everything stays on the phone. Google Play Billing
+         (the Mono subscription) merges in its own BILLING permission and talks to
+         the Play Store app, not to the network directly. -->
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"

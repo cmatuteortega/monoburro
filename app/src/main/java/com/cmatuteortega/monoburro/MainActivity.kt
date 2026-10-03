@@ -17,8 +17,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
-            MonoburroApp(vm, onDarkChanged = ::applySystemBars)
+            MonoburroApp(vm, onDarkChanged = ::applySystemBars, onSubscribe = { vm.subscribe(this) })
         }
+    }
+
+    /** Picks up renewals, cancellations and purchases made outside the app. */
+    override fun onResume() {
+        super.onResume()
+        vm.refreshBilling()
     }
 
     /** Status bar icons follow the in-app theme toggle, not just the system one. */

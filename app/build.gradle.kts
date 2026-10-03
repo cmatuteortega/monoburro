@@ -35,6 +35,8 @@ android {
     }
     buildFeatures {
         compose = true
+        // BuildConfig.DEBUG unlocks a simulated Mono purchase in debug builds.
+        buildConfig = true
     }
     lint {
         abortOnError = true
@@ -55,6 +57,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    // Google Play Billing: the Mono monthly subscription.
+    implementation("com.android.billingclient:billing:8.3.0")
 
     testImplementation("junit:junit:4.13.2")
 }
