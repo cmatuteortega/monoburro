@@ -1,6 +1,8 @@
 package com.cmatuteortega.monoburro.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,8 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -25,22 +31,28 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.layout.Box
-import com.cmatuteortega.monoburro.data.ingredient
+import com.cmatuteortega.monoburro.logic.categoryGrams
 import com.cmatuteortega.monoburro.logic.fillings
 import com.cmatuteortega.monoburro.logic.macrosPerBurrito
 import com.cmatuteortega.monoburro.model.Burrito
-import com.cmatuteortega.monoburro.ui.MacroRow
+import com.cmatuteortega.monoburro.ui.CompositionBar
+import com.cmatuteortega.monoburro.ui.EmojiTile
+import com.cmatuteortega.monoburro.ui.EmptyState
+import com.cmatuteortega.monoburro.ui.MacroLine
 import com.cmatuteortega.monoburro.ui.MenuCard
+import com.cmatuteortega.monoburro.ui.ScreenPadding
+import kotlin.math.roundToInt
 
 /** The library: every saved burrito, and the way to make a new one. */
 @Composable
 fun BurritosScreen(
     burritos: List<Burrito>,
+    dailyKcal: Int,
+    burritosPerDay: Int,
     onOpen: (String) -> Unit,
     onSuggest: () -> Unit,
     onBuildOwn: () -> Unit,
@@ -49,42 +61,32 @@ fun BurritosScreen(
     Box(Modifier.fillMaxSize()) {
         LazyColumn(
             Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
+            contentPadding = PaddingValues(start = ScreenPadding, end = ScreenPadding, top = 8.dp, bottom = 104.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item {
-                Text("Your burritos", style = MaterialTheme.typography.headlineSmall)
-                Text(
-                    if (burritos.isEmpty()) "Nothing saved yet." else "Tap one to tune it, see what's inside or shop for it.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp, bottom = 4.dp),
-                )
-            }
             if (burritos.isEmpty()) {
                 item {
-                    Column(
-                        Modifier.fillMaxWidth().padding(top = 48.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text("🫓", fontSize = 72.sp)
-                        Text(
-                            "Make your first burrito with the button below.",
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 8.dp),
-                        )
-                    }
+                    EmptyState(
+                        "🫓",
+                        "No burritos yet",
+                        "Make one from your tastes, or fill an empty tortilla yourself.",
+                    )
                 }
+            } else {
+                item { Summary(burritos, burritosPerDay) }
             }
-            items(burritos.asReversed(), key = { it.id }) { b -> BurritoCard(b, onClick = { onOpen(b.id) }) }
+            items(burritos.asReversed(), key = { it.id }) { b ->
+                BurritoCard(b, dailyKcal, onClick = { onOpen(b.id) })
+            }
         }
         ExtendedFloatingActionButton(
             onClick = { chooser = true },
-            icon = { Text("➕") },
-            text = { Text("New burrito") },
+            icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
+            text = { Text("New burrito", style = MaterialTheme.typography.labelLarge) },
             shape = RoundedCornerShape(20.dp),
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(ScreenPadding),
         )
     }
 
@@ -97,31 +99,70 @@ fun BurritosScreen(
     }
 }
 
+/** The whole library at a glance: how many burritos, and how long they last. */
 @Composable
-private fun BurritoCard(b: Burrito, onClick: () -> Unit) {
+private fun Summary(burritos: List<Burrito>, perDay: Int) {
     val cs = MaterialTheme.colorScheme
+    val total = burritos.sumOf { it.count }
+    val days = total / perDay
+    Surface(shape = RoundedCornerShape(28.dp), color = cs.primary, contentColor = cs.onPrimary, modifier = Modifier.fillMaxWidth()) {
+        Box(
+            Modifier.background(
+                Brush.linearGradient(listOf(cs.primary, lerp(cs.primary, cs.tertiary, 0.45f))),
+            ),
+        ) {
+            Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("$total", style = MaterialTheme.typography.displayMedium)
+                    Text(
+                        "burritos in ${burritos.size} ${if (burritos.size == 1) "recipe" else "recipes"}",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        if (days >= 1) "About $days ${if (days == 1) "day" else "days"} of food at $perDay a day" else "Less than a day at $perDay a day",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = cs.onPrimary.copy(alpha = 0.85f),
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
+                }
+                Text("🌯", style = MaterialTheme.typography.displayLarge)
+            }
+        }
+    }
+}
+
+@Composable
+private fun BurritoCard(b: Burrito, dailyKcal: Int, onClick: () -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    val macros = b.macrosPerBurrito()
     MenuCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(b.emoji, fontSize = 34.sp)
-                Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                EmojiTile(b.emoji, size = 56.dp, color = cs.primaryContainer.copy(alpha = 0.6f))
+                Column(Modifier.weight(1f).padding(start = 14.dp)) {
                     Text(b.name, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Text(
-                        "× ${b.count} · ${b.tortilla.label} ${b.tortilla.inches}\" tortilla",
+                        "${b.count} × ${b.tortilla.label} ${b.tortilla.inches}\" · ${(macros.kcal * 100 / dailyKcal).roundToInt()}% of your day each",
                         style = MaterialTheme.typography.bodySmall,
                         color = cs.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp),
                     )
                 }
-                Text("›", style = MaterialTheme.typography.headlineSmall, color = cs.onSurfaceVariant)
+                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = cs.onSurfaceVariant)
             }
-            val fillings = b.fillings()
-            Text(
-                if (fillings.isEmpty()) "Empty: add some fillings" else fillings.joinToString(" ") { ingredient(it.ingredientId).emoji },
-                fontSize = 20.sp,
-                maxLines = 1,
-                modifier = Modifier.padding(vertical = 10.dp),
-            )
-            MacroRow(b.macrosPerBurrito(), compact = true)
+            if (b.fillings().isEmpty()) {
+                Text(
+                    "Empty tortilla: tap to add fillings",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = cs.primary,
+                    modifier = Modifier.padding(top = 14.dp),
+                )
+            } else {
+                CompositionBar(b.categoryGrams(), Modifier.padding(top = 16.dp, bottom = 12.dp), height = 6.dp)
+                MacroLine(macros)
+            }
         }
     }
 }
@@ -131,10 +172,16 @@ private fun BurritoCard(b: Burrito, onClick: () -> Unit) {
 private fun NewBurritoSheet(onSuggest: () -> Unit, onBuildOwn: () -> Unit, onDismiss: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(
-            Modifier.navigationBarsPadding().padding(horizontal = 20.dp).padding(bottom = 20.dp),
+            Modifier.navigationBarsPadding().padding(horizontal = ScreenPadding).padding(bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("New burrito", style = MaterialTheme.typography.headlineSmall)
+            Text(
+                "Let us propose one, or start from a bare tortilla.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
             Option("✨", "From your tastes", "Three proposals built from your swipes and ratios.", onSuggest)
             Option("🧑‍🍳", "Build your own", "Start with an empty tortilla and add fillings yourself.", onBuildOwn)
         }
@@ -143,18 +190,14 @@ private fun NewBurritoSheet(onSuggest: () -> Unit, onBuildOwn: () -> Unit, onDis
 
 @Composable
 private fun Option(emoji: String, title: String, text: String, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    MenuCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(emoji, fontSize = 30.sp)
-            Column(Modifier.padding(start = 14.dp)) {
+            EmojiTile(emoji, size = 52.dp, color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f))
+            Column(Modifier.weight(1f).padding(start = 14.dp)) {
                 Text(title, style = MaterialTheme.typography.titleMedium)
                 Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

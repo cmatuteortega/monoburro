@@ -256,9 +256,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app), BurritoEditor {
         _notice.value = "New suggestions will aim for $perBurrito kcal per burrito 🎯"
     }
 
-    fun cycleTheme() = update {
-        it.copy(themeMode = ThemeMode.entries[(it.themeMode.ordinal + 1) % ThemeMode.entries.size])
-    }
+    fun setTheme(mode: ThemeMode) = update { it.copy(themeMode = mode) }
 
     /**
      * Back to the taste quiz with fresh swipes and ratios. The burritos, the

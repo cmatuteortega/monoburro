@@ -1,18 +1,17 @@
 package com.cmatuteortega.monoburro.ui.screens
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
@@ -24,8 +23,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cmatuteortega.monoburro.data.TORTILLA
@@ -35,7 +32,13 @@ import com.cmatuteortega.monoburro.logic.generateProposals
 import com.cmatuteortega.monoburro.model.Proposal
 import com.cmatuteortega.monoburro.model.UserPrefs
 import com.cmatuteortega.monoburro.ui.BottomAction
-import com.cmatuteortega.monoburro.ui.MacroRow
+import com.cmatuteortega.monoburro.ui.EmojiTile
+import com.cmatuteortega.monoburro.ui.EmptyState
+import com.cmatuteortega.monoburro.ui.MacroStats
+import com.cmatuteortega.monoburro.ui.PrimaryButton
+import com.cmatuteortega.monoburro.ui.ScreenPadding
+import com.cmatuteortega.monoburro.ui.theme.LocalDarkTheme
+import com.cmatuteortega.monoburro.ui.theme.color
 import kotlin.math.roundToInt
 
 @Composable
@@ -43,29 +46,15 @@ fun ProposalsScreen(
     prefs: UserPrefs,
     onChoose: (Proposal) -> Unit,
     onBackToSwipe: () -> Unit,
-    actionLabel: (Proposal) -> String = { "Batch-cook ${it.name.lowercase()} →" },
+    actionLabel: (Proposal) -> String = { "Batch-cook ${it.name.lowercase()}" },
 ) {
     val proposals = remember(prefs) { generateProposals(prefs) }
     // Only the tortilla means nothing liked survived: send the user back to the deck.
     if (proposals.all { p -> p.items.all { it.ingredientId == TORTILLA.id } }) {
-        Column(
-            Modifier.fillMaxSize().padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Text("🫓", fontSize = 72.sp)
-            Text(
-                "Nothing to fill it with yet",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(top = 12.dp),
-            )
-            Text(
-                "Like a few fillings first and we'll build burritos from them.",
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp, bottom = 24.dp),
-            )
-            Button(onClick = onBackToSwipe) { Text("Back to swiping") }
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+            EmptyState("🫓", "Nothing to fill it with yet", "Like a few fillings first and we'll build burritos from them.") {
+                PrimaryButton("Back to swiping", onBackToSwipe)
+            }
         }
         return
     }
@@ -76,7 +65,7 @@ fun ProposalsScreen(
     Column(Modifier.fillMaxSize()) {
         LazyColumn(
             Modifier.weight(1f),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = ScreenPadding, end = ScreenPadding, top = 8.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             item {
@@ -100,39 +89,46 @@ fun ProposalsScreen(
 @Composable
 private fun ProposalCard(p: Proposal, prefs: UserPrefs, selected: Boolean, onClick: () -> Unit) {
     val cs = MaterialTheme.colorScheme
+    val dark = LocalDarkTheme.current
+    val border by animateColorAsState(if (selected) cs.primary else cs.outlineVariant, label = "border")
     Surface(
         onClick = onClick,
         selected = selected,
         shape = RoundedCornerShape(26.dp),
-        color = if (selected) cs.surface else cs.surfaceContainer,
-        border = BorderStroke(if (selected) 2.5.dp else 1.dp, if (selected) cs.primary else cs.outlineVariant),
-        shadowElevation = if (selected) 4.dp else 0.dp,
+        color = cs.surface,
+        border = BorderStroke(if (selected) 2.dp else 1.dp, border),
+        shadowElevation = if (selected) 6.dp else 0.dp,
     ) {
         Column(Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(p.kind.emoji(), fontSize = 34.sp)
-                Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                EmojiTile(p.kind.emoji(), size = 52.dp, color = cs.primaryContainer.copy(alpha = 0.6f))
+                Column(Modifier.weight(1f).padding(start = 14.dp)) {
                     Text(p.name, style = MaterialTheme.typography.titleLarge)
-                    Text(p.tagline, style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
+                    Text(p.tagline, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, maxLines = 2)
                 }
                 RadioButton(selected = selected, onClick = onClick)
             }
-            Column(Modifier.padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(Modifier.padding(top = 14.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 p.items.forEach { item ->
                     val ing = ingredient(item.ingredientId)
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(ing.emoji, fontSize = 18.sp, modifier = Modifier.width(30.dp))
-                        Text(ing.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                        EmojiTile(ing.emoji, size = 28.dp, color = ing.category.color(dark).copy(alpha = 0.16f))
+                        Text(
+                            ing.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f).padding(start = 10.dp),
+                        )
                         Text(
                             "${item.gramsPerBurrito} g",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontSize = 14.sp,
                             color = cs.onSurfaceVariant,
                         )
                     }
                 }
             }
-            MacroRow(p.macrosPerBurrito, compact = true)
+            HorizontalDivider(color = cs.outlineVariant)
+            MacroStats(p.macrosPerBurrito, Modifier.padding(top = 14.dp))
             TargetLine(p, prefs)
         }
     }

@@ -21,8 +21,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Undo
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +48,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
@@ -67,11 +73,13 @@ import com.cmatuteortega.monoburro.model.Ingredient
 import com.cmatuteortega.monoburro.model.UserPrefs
 import com.cmatuteortega.monoburro.storage.AppState
 import com.cmatuteortega.monoburro.storage.Swipe
+import com.cmatuteortega.monoburro.ui.PrimaryButton
+import com.cmatuteortega.monoburro.ui.ScreenPadding
 import com.cmatuteortega.monoburro.ui.theme.LocalDarkTheme
 import com.cmatuteortega.monoburro.ui.theme.color
-import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 @Composable
 fun SwipeScreen(
@@ -85,7 +93,7 @@ fun SwipeScreen(
     val card = nextCard(prefs, state.keepSwiping)
     val behind = cardAfter(prefs, state.keepSwiping)
 
-    Column(Modifier.fillMaxSize().navigationBarsPadding().padding(horizontal = 16.dp)) {
+    Column(Modifier.fillMaxSize().navigationBarsPadding().padding(horizontal = ScreenPadding)) {
         QuotaChips(prefs)
         LinearProgressIndicator(
             progress = { state.swipeOrder.size / INGREDIENTS.size.toFloat() },
@@ -244,27 +252,31 @@ private fun SwipeableCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val cs = MaterialTheme.colorScheme
-            SmallRound("↶", "Undo", enabled = canUndo, onClick = onUndo)
-            BigRound("✕", "Never", cs.surfaceContainerHigh, cs.error) { commit(Swipe.NEVER) }
-            BigRound("★", "Favourite", cs.tertiaryContainer, cs.tertiary, size = 60) { commit(Swipe.FAVORITE) }
-            BigRound("♥", "Like", cs.primary, cs.onPrimary) { commit(Swipe.LIKE) }
+            SmallRound(Icons.AutoMirrored.Rounded.Undo, "Undo", enabled = canUndo, onClick = onUndo)
+            BigRound(Icons.Rounded.Close, "Never", cs.surface, cs.error) { commit(Swipe.NEVER) }
+            BigRound(Icons.Rounded.Star, "Favourite", cs.surface, cs.tertiary, size = 58) { commit(Swipe.FAVORITE) }
+            BigRound(Icons.Rounded.Favorite, "Like", cs.primary, cs.onPrimary) { commit(Swipe.LIKE) }
             Spacer(Modifier.size(44.dp))
         }
     }
 }
 
 @Composable
-private fun BigRound(symbol: String, label: String, bg: Color, fg: Color, size: Int = 70, onClick: () -> Unit) {
-    FilledIconButton(
+private fun BigRound(icon: ImageVector, label: String, bg: Color, fg: Color, size: Int = 70, onClick: () -> Unit) {
+    Surface(
         onClick = onClick,
-        modifier = Modifier.size(size.dp).semantics { contentDescription = label },
         shape = CircleShape,
-        colors = IconButtonDefaults.filledIconButtonColors(containerColor = bg, contentColor = fg),
-    ) { Text(symbol, fontSize = (size * 0.42).sp, fontWeight = FontWeight.Black) }
+        color = bg,
+        contentColor = fg,
+        shadowElevation = 6.dp,
+        modifier = Modifier.size(size.dp).semantics { contentDescription = label },
+    ) {
+        Box(contentAlignment = Alignment.Center) { Icon(icon, contentDescription = null, modifier = Modifier.size((size * 0.44).dp)) }
+    }
 }
 
 @Composable
-private fun SmallRound(symbol: String, label: String, enabled: Boolean, onClick: () -> Unit) {
+private fun SmallRound(icon: ImageVector, label: String, enabled: Boolean, onClick: () -> Unit) {
     FilledIconButton(
         onClick = onClick,
         enabled = enabled,
@@ -274,7 +286,7 @@ private fun SmallRound(symbol: String, label: String, enabled: Boolean, onClick:
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         ),
-    ) { Text(symbol, fontSize = 20.sp, fontWeight = FontWeight.Bold) }
+    ) { Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp)) }
 }
 
 @Composable
@@ -419,11 +431,7 @@ private fun DoneCard(prefs: UserPrefs, keepSwiping: Boolean, onKeepSwiping: () -
                 Text(likedEmojis, fontSize = 26.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 16.dp))
             }
             Spacer(Modifier.height(28.dp))
-            Button(
-                onClick = onContinue,
-                modifier = Modifier.fillMaxWidth().height(58.dp),
-                shape = RoundedCornerShape(20.dp),
-            ) { Text("Set my ratios →", style = MaterialTheme.typography.labelLarge) }
+            PrimaryButton("Set my ratios", onContinue, Modifier.fillMaxWidth())
             if (!keepSwiping && unseen > 0) {
                 TextButton(onClick = onKeepSwiping, modifier = Modifier.padding(top = 8.dp)) {
                     Text("Keep swiping ($unseen more)")

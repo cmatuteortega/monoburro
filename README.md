@@ -11,7 +11,8 @@ but burritos) and asks you to pick a mode:
   the AI features (AI burrito chef, macro coach, smart shopping list, remixes).
 - **Burro 🫏** (right): free, the basics.
 
-The chosen mode's emoji sits top right for the rest of the app; tapping it opens
+The chosen mode sits top right for the rest of the app (a gold *Mono* pill, or
+a *Go Mono* pill for Burros); tapping it opens
 the Mono paywall (Burro) or the subscription sheet (Mono). For now every feature
 is built for both modes: `model/Mode.kt` has the `Feature` list and
 `Mode.can(feature)`; flip a feature's `monoOnly` to gate it. If a Mono
@@ -53,16 +54,31 @@ Four tabs on a bottom bar:
   by hand; burritos per day, the per-burrito budget (and a button to aim new
   proposals at it), and how each saved burrito fits.
 - **👤 Profile**: mode, goal, age, weight, height, sex, activity, favourite
-  food (and your ⭐ fillings), and *Redo the taste quiz*.
+  food (and your ⭐ fillings), appearance (auto / light / dark) and *Redo the
+  taste quiz*.
 
 The goal is **Eat** by default, and it's the only one in Burro mode: **Bulk**
 and **Cut** are Mono features (`Feature.BULK_CUT`). If Mono lapses, a Bulk or
 Cut pick runs as Eat until it comes back.
 
 "Redo taste quiz" (⋮ menu or Profile) clears swipes and ratios only; burritos,
-shopping list, goals and profile stay. 🌓 cycles system / light / dark. Saved
+shopping list, goals and profile stay. Saved
 state from the old four-step onboarding (which ended on a batch plan) is
 migrated: that burrito becomes the first one in the library.
+
+## Design
+
+`ui/theme/Theme.kt` holds the tokens: the warm taqueria palette (light and
+dark), one colour per filling category and per macro (kcal salsa, protein
+avocado, carbs gold, fat plum, the same everywhere), shapes, and the type
+scale. Headlines, titles and the big numbers use **Bricolage Grotesque**
+(`res/font/`, SIL OFL, see `licenses/`); body text stays on the system font.
+`ui/Components.kt` has the shared blocks every screen is built from: cards,
+section headers, `MacroStats` / `MacroLine`, `CompositionBar`, `EmojiTile`,
+`Pill`, `ChoiceRow`, `Stepper`, `EmptyState` and the pinned `BottomAction`.
+
+Tabs get a large title with the mode pill; screens opened on top (a burrito,
+the proposals) get a back arrow instead of the bottom bar.
 
 ## Billing (Mono subscription)
 

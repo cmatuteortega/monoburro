@@ -1,13 +1,8 @@
 package com.cmatuteortega.monoburro.ui.screens
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,12 +10,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
@@ -28,7 +21,6 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -38,10 +30,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -51,8 +41,13 @@ import com.cmatuteortega.monoburro.model.Ratios
 import com.cmatuteortega.monoburro.model.Targets
 import com.cmatuteortega.monoburro.model.TortillaSize
 import com.cmatuteortega.monoburro.model.UserPrefs
-import com.cmatuteortega.monoburro.ui.BottomAction
 import com.cmatuteortega.monoburro.ui.AppViewModel
+import com.cmatuteortega.monoburro.ui.BottomAction
+import com.cmatuteortega.monoburro.ui.ChoiceRow
+import com.cmatuteortega.monoburro.ui.CompositionBar
+import com.cmatuteortega.monoburro.ui.MenuCard
+import com.cmatuteortega.monoburro.ui.ScreenPadding
+import com.cmatuteortega.monoburro.ui.Stepper
 import com.cmatuteortega.monoburro.ui.theme.LocalDarkTheme
 import com.cmatuteortega.monoburro.ui.theme.color
 import kotlin.math.roundToInt
@@ -75,7 +70,7 @@ fun RatioScreen(
             Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = ScreenPadding),
         ) {
             Text("How do you pack it?", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 8.dp))
             Text(
@@ -84,123 +79,85 @@ fun RatioScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 14.dp),
             )
-            RatioBar(prefs.ratios, dark)
-
-            Category.FILLINGS.forEach { c ->
-                val pct = prefs.ratios[c]
-                val grams = (prefs.tortilla.fillingBudgetGrams * pct / 100.0).roundToInt()
-                Row(Modifier.fillMaxWidth().padding(top = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(c.emoji, fontSize = 22.sp)
-                    Text(c.label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 10.dp).weight(1f))
-                    Text("≈ $grams g", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        "$pct%",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier.width(56.dp),
-                    )
-                }
-                Slider(
-                    value = pct.toFloat(),
-                    onValueChange = { onRatio(c, it.roundToInt()) },
-                    valueRange = 0f..100f,
-                    colors = SliderDefaults.colors(
-                        thumbColor = c.color(dark),
-                        activeTrackColor = c.color(dark),
-                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
-                        inactiveTickColor = c.color(dark),
-                    ),
-                    modifier = Modifier.semantics { contentDescription = "${c.label} percent" },
-                )
-            }
-            if (prefs.ratios != Ratios.DEFAULT) {
-                TextButton(onClick = onResetRatios) { Text("Reset to 35 / 30 / 20 / 10 / 5") }
-            }
-
-            SectionTitle("How many burritos?")
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                FilledTonalIconButton(onClick = { onCount(prefs.burritoCount - 1) }, modifier = Modifier.size(56.dp)) {
-                    Text("−", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                }
-                Text(
-                    "${prefs.burritoCount}",
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.Black,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.width(120.dp),
-                )
-                FilledTonalIconButton(
-                    onClick = { onCount(prefs.burritoCount + 1) },
-                    enabled = prefs.burritoCount < AppViewModel.MAX_BURRITOS,
-                    modifier = Modifier.size(56.dp),
-                ) { Text("+", fontSize = 28.sp, fontWeight = FontWeight.Bold) }
-            }
-
-            SectionTitle("Tortilla size")
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TortillaSize.entries.forEach { size ->
-                    val selected = size == prefs.tortilla
-                    Surface(
-                        onClick = { onTortilla(size) },
-                        selected = selected,
-                        modifier = Modifier.weight(1f).height(84.dp),
-                        shape = RoundedCornerShape(18.dp),
-                        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
-                        border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
-                    ) {
-                        Column(
-                            Modifier.fillMaxSize(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            Text(size.label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                            Text("${size.inches}\"", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
-                            Text("${size.grams} g", style = MaterialTheme.typography.labelSmall)
+            MenuCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+                    CompositionBar(Category.FILLINGS.associateWith { prefs.ratios[it] }, height = 12.dp)
+                    Category.FILLINGS.forEach { c ->
+                        val pct = prefs.ratios[c]
+                        val grams = (prefs.tortilla.fillingBudgetGrams * pct / 100.0).roundToInt()
+                        Row(Modifier.fillMaxWidth().padding(top = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(c.emoji, fontSize = 18.sp)
+                            Text(c.label, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(start = 8.dp).weight(1f))
+                            Text("≈ $grams g", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                "$pct%",
+                                style = MaterialTheme.typography.titleMedium,
+                                textAlign = TextAlign.End,
+                                modifier = Modifier.width(52.dp),
+                            )
                         }
+                        Slider(
+                            value = pct.toFloat(),
+                            onValueChange = { onRatio(c, it.roundToInt()) },
+                            valueRange = 0f..100f,
+                            colors = SliderDefaults.colors(
+                                thumbColor = c.color(dark),
+                                activeTrackColor = c.color(dark),
+                                inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            ),
+                            modifier = Modifier.height(32.dp).semantics { contentDescription = "${c.label} percent" },
+                        )
+                    }
+                    if (prefs.ratios != Ratios.DEFAULT) {
+                        TextButton(onClick = onResetRatios) { Text("Reset to 35 / 30 / 20 / 10 / 5") }
                     }
                 }
             }
+
+            SectionTitle("How many burritos?")
+            MenuCard(Modifier.fillMaxWidth()) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("${prefs.burritoCount}", style = MaterialTheme.typography.displaySmall)
+                        Text(
+                            "burritos in one batch",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Stepper(
+                        value = "",
+                        onMinus = { onCount(prefs.burritoCount - 1) },
+                        onPlus = { onCount(prefs.burritoCount + 1) },
+                        minusEnabled = prefs.burritoCount > 1,
+                        plusEnabled = prefs.burritoCount < AppViewModel.MAX_BURRITOS,
+                        buttonSize = 48.dp,
+                        valueWidth = 8.dp,
+                        label = "burritos",
+                    )
+                }
+            }
+
+            SectionTitle("Tortilla size")
+            ChoiceRow(
+                options = TortillaSize.entries,
+                selected = prefs.tortilla,
+                onPick = onTortilla,
+                title = { "${it.inches}\"" },
+                subtitle = { "${it.label} · ${it.grams} g" },
+            )
 
             SectionTitle("Target per burrito (optional)")
             TargetPicker(prefs.targets, onTargets)
             Spacer(Modifier.height(24.dp))
         }
-        BottomAction("Show me 3 burritos →", onContinue)
+        BottomAction("Show me 3 burritos", onContinue)
     }
 }
 
 @Composable
 private fun SectionTitle(text: String) {
     Text(text, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 28.dp, bottom = 12.dp))
-}
-
-@Composable
-private fun RatioBar(ratios: Ratios, dark: Boolean) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .height(22.dp)
-            .clip(RoundedCornerShape(11.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant),
-    ) {
-        Category.FILLINGS.forEach { c ->
-            val pct = ratios[c]
-            if (pct > 0) Box(Modifier.weight(pct.toFloat()).fillMaxHeight().background(c.color(dark)))
-        }
-    }
-    Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-        Category.FILLINGS.forEach { c ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(8.dp).clip(CircleShape).background(c.color(dark)))
-                Text(" ${ratios[c]}", style = MaterialTheme.typography.labelSmall)
-            }
-        }
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

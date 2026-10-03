@@ -1,6 +1,7 @@
 package com.cmatuteortega.monoburro.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -66,8 +68,10 @@ fun PaywallSheet(
                 .padding(bottom = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(Mode.MONO.displayEmoji, fontSize = 56.sp)
-            Text("Go Mono", style = MaterialTheme.typography.headlineMedium)
+            Surface(shape = CircleShape, color = cs.tertiaryContainer, modifier = Modifier.size(96.dp)) {
+                Box(contentAlignment = Alignment.Center) { Text(Mode.MONO.displayEmoji, fontSize = 52.sp) }
+            }
+            Text("Go Mono", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 12.dp))
             Text(
                 "The premium burrito life, with AI in the kitchen.",
                 style = MaterialTheme.typography.bodyLarge,
@@ -76,7 +80,7 @@ fun PaywallSheet(
             )
             Column(
                 Modifier.fillMaxWidth().padding(vertical = 18.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 MONO_PERKS.forEach { (emoji, perk) -> Perk(emoji, perk.first, perk.second) }
             }
@@ -102,8 +106,8 @@ fun PaywallSheet(
             Button(
                 onClick = onSubscribe,
                 enabled = !billing.busy,
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(58.dp),
-                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(56.dp),
+                shape = RoundedCornerShape(18.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = cs.tertiary, contentColor = cs.onTertiary),
                 contentPadding = PaddingValues(horizontal = 24.dp),
             ) {
@@ -151,8 +155,10 @@ fun MonoSheet(
                 .padding(bottom = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(Mode.MONO.displayEmoji, fontSize = 56.sp)
-            Text("You're Mono", style = MaterialTheme.typography.headlineMedium)
+            Surface(shape = CircleShape, color = cs.tertiaryContainer, modifier = Modifier.size(96.dp)) {
+                Box(contentAlignment = Alignment.Center) { Text(Mode.MONO.displayEmoji, fontSize = 52.sp) }
+            }
+            Text("You're Mono", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 12.dp))
             Text(
                 "Everything's unlocked. The burrito thanks you.",
                 style = MaterialTheme.typography.bodyLarge,
@@ -161,7 +167,7 @@ fun MonoSheet(
             )
             Column(
                 Modifier.fillMaxWidth().padding(vertical = 18.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 MONO_PERKS.forEach { (emoji, perk) -> Perk(emoji, perk.first, perk.second) }
             }
@@ -180,9 +186,9 @@ fun MonoSheet(
 
 @Composable
 private fun Perk(emoji: String, title: String, body: String) {
-    Row(verticalAlignment = Alignment.Top) {
-        Text(emoji, fontSize = 24.sp, modifier = Modifier.padding(end = 12.dp))
-        Column {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        EmojiTile(emoji, size = 44.dp, color = MaterialTheme.colorScheme.tertiaryContainer)
+        Column(Modifier.padding(start = 14.dp)) {
             Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             Text(body, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }

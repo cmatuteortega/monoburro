@@ -2,6 +2,7 @@ package com.cmatuteortega.monoburro.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -13,18 +14,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.LunchDining
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -55,7 +58,6 @@ import com.cmatuteortega.monoburro.BuildConfig
 import com.cmatuteortega.monoburro.billing.MonoBilling
 import com.cmatuteortega.monoburro.model.Mode
 import com.cmatuteortega.monoburro.storage.Step
-import com.cmatuteortega.monoburro.storage.ThemeMode
 import com.cmatuteortega.monoburro.ui.screens.LandingScreen
 import com.cmatuteortega.monoburro.ui.screens.ProposalsScreen
 import com.cmatuteortega.monoburro.ui.screens.RatioScreen
@@ -163,11 +165,9 @@ private fun Onboarding(vm: AppViewModel, onModeBadge: () -> Unit) {
         topBar = {
             TopBar(
                 step = state.step,
-                themeMode = state.themeMode,
                 mode = state.mode ?: Mode.BURRO,
                 onModeBadge = onModeBadge,
                 onBack = vm::back,
-                onTheme = vm::cycleTheme,
                 onRestart = { confirmRestart = true },
                 onBackToMenu = if (state.burritos.isNotEmpty()) vm::backToMenu else null,
             )
@@ -225,50 +225,50 @@ private fun Onboarding(vm: AppViewModel, onModeBadge: () -> Unit) {
 @Composable
 private fun TopBar(
     step: Step,
-    themeMode: ThemeMode,
     onBack: () -> Unit,
-    onTheme: () -> Unit,
     mode: Mode,
     onModeBadge: () -> Unit,
     onRestart: () -> Unit,
     onBackToMenu: (() -> Unit)?,
 ) {
     var menu by remember { mutableStateOf(false) }
+    val cs = MaterialTheme.colorScheme
     Column(
         Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
+            .background(cs.background)
             .statusBarsPadding()
             .padding(horizontal = 8.dp, vertical = 4.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.height(56.dp), verticalAlignment = Alignment.CenterVertically) {
             if (step != Step.SWIPE) {
-                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back") }
             } else {
-                Text("🌯", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(horizontal = 12.dp))
+                Spacer(Modifier.width(12.dp))
             }
-            Column(Modifier.weight(1f)) {
-                Text("Monoburro", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+            Column(Modifier.weight(1f).padding(start = 4.dp)) {
                 Text(
-                    "Step ${step.ordinal + 1} of ${Step.entries.size} · ${STEP_TITLES.getValue(step)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    "STEP ${step.ordinal + 1} OF ${Step.entries.size}",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.2.sp,
+                    color = cs.primary,
                 )
+                Text(STEP_TITLES.getValue(step), style = MaterialTheme.typography.titleLarge)
             }
-            ThemeButton(themeMode, onTheme)
             Box {
-                IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = "More") }
+                IconButton(onClick = { menu = true }) { Icon(Icons.Rounded.MoreVert, contentDescription = "More") }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     onBackToMenu?.let { back ->
                         DropdownMenuItem(
                             text = { Text("Back to my burritos") },
-                            leadingIcon = { Text("🌯") },
+                            leadingIcon = { Icon(Icons.Rounded.LunchDining, contentDescription = null) },
                             onClick = { menu = false; back() },
                         )
                     }
                     DropdownMenuItem(
                         text = { Text("Restart onboarding") },
-                        leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                        leadingIcon = { Icon(Icons.Rounded.Refresh, contentDescription = null) },
                         onClick = { menu = false; onRestart() },
                     )
                 }
@@ -276,63 +276,51 @@ private fun TopBar(
             ModeBadge(mode, onModeBadge)
         }
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Step.entries.forEach {
+                val progress by animateFloatAsState(if (it.ordinal <= step.ordinal) 1f else 0f, label = "segment")
                 Box(
                     Modifier
                         .weight(1f)
-                        .height(5.dp)
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(
-                            if (it.ordinal <= step.ordinal) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.outlineVariant,
-                        ),
-                )
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(cs.outlineVariant),
+                ) {
+                    Box(Modifier.fillMaxWidth(progress).fillMaxHeight().background(cs.primary))
+                }
             }
         }
     }
 }
 
-/** 🌓 / ☀️ / 🌙: cycles system, light and dark. */
-@Composable
-internal fun ThemeButton(themeMode: ThemeMode, onTheme: () -> Unit) {
-    IconButton(onClick = onTheme) {
-        Text(
-            when (themeMode) {
-                ThemeMode.SYSTEM -> "🌓"
-                ThemeMode.LIGHT -> "☀️"
-                ThemeMode.DARK -> "🌙"
-            },
-            style = MaterialTheme.typography.titleLarge,
-        )
-    }
-}
-
 /**
- * The chosen mode's emoji, top right on every screen. Mono gets a gold ring;
- * Burro a plain one with a small ✨ inviting the upgrade. Tapping opens the
- * Mono sheet or the paywall.
+ * The chosen mode, top right on every main screen: a gold "Mono" pill, or
+ * for Burro a pill inviting the upgrade. Tapping opens the Mono sheet or the
+ * paywall.
  */
 @Composable
 internal fun ModeBadge(mode: Mode, onClick: () -> Unit) {
     val cs = MaterialTheme.colorScheme
     val mono = mode == Mode.MONO
-    Box(Modifier.padding(start = 4.dp, end = 4.dp)) {
-        Surface(
-            onClick = onClick,
-            shape = CircleShape,
-            color = if (mono) cs.tertiaryContainer else cs.surfaceVariant,
-            border = BorderStroke(2.dp, if (mono) cs.tertiary else cs.outline),
-            modifier = Modifier.size(42.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(mode.displayEmoji, fontSize = 22.sp)
-            }
-        }
-        if (!mono) {
-            Text("✨", fontSize = 12.sp, modifier = Modifier.align(Alignment.TopEnd))
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(50),
+        color = if (mono) cs.tertiaryContainer else cs.surface,
+        contentColor = if (mono) cs.onTertiaryContainer else cs.onSurface,
+        border = BorderStroke(1.dp, if (mono) cs.tertiary.copy(alpha = 0.5f) else cs.outlineVariant),
+        modifier = Modifier.padding(horizontal = 4.dp).height(40.dp),
+    ) {
+        Row(Modifier.padding(start = 6.dp, end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(mode.displayEmoji, fontSize = 20.sp)
+            Text(
+                if (mono) "Mono" else "Go Mono",
+                style = MaterialTheme.typography.labelLarge,
+                fontSize = 14.sp,
+                color = if (mono) cs.onTertiaryContainer else cs.primary,
+                modifier = Modifier.padding(start = 6.dp),
+            )
         }
     }
 }
