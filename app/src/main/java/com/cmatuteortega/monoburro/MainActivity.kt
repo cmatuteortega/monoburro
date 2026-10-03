@@ -8,10 +8,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import com.cmatuteortega.monoburro.ui.MonoburroApp
-import com.cmatuteortega.monoburro.ui.OnboardingViewModel
+import com.cmatuteortega.monoburro.ui.AppViewModel
 
 class MainActivity : ComponentActivity() {
-    private val vm: OnboardingViewModel by viewModels()
+    private val vm: AppViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()

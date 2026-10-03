@@ -15,8 +15,7 @@ enum class Mode(val emoji: String, val fallbackEmoji: String, val label: String,
 }
 
 /**
- * Everything that can differ between modes. For now every feature is built for
- * both, so [monoOnly] is false across the board; flip it to gate a feature
+ * Everything that can differ between modes. Flip [monoOnly] to gate a feature
  * behind the subscription and check it with [Mode.can].
  */
 enum class Feature(val monoOnly: Boolean) {
@@ -24,9 +23,24 @@ enum class Feature(val monoOnly: Boolean) {
     RATIOS(monoOnly = false),
     PROPOSALS(monoOnly = false),
     BATCH_PLAN(monoOnly = false),
+    BURRITO_LIBRARY(monoOnly = false),
+    SHOPPING_LIST(monoOnly = false),
+    MACRO_GOALS(monoOnly = false),
+    PROFILE(monoOnly = false),
+
+    /** The Bulk and Cut goals; Burro always runs in Eat. */
+    BULK_CUT(monoOnly = true),
 }
 
 fun Mode.can(feature: Feature): Boolean = this == Mode.MONO || !feature.monoOnly
+
+fun Mode.can(goal: Goal): Boolean = !goal.monoOnly || can(Feature.BULK_CUT)
+
+/**
+ * The goal the app actually uses: a Mono-only goal picked while subscribed
+ * falls back to Eat when running as Burro (it comes back if Mono does).
+ */
+fun effectiveGoal(chosen: Goal, mode: Mode): Goal = if (mode.can(chosen)) chosen else Goal.EAT
 
 /**
  * The mode the app should actually run in: Mono needs an active subscription,

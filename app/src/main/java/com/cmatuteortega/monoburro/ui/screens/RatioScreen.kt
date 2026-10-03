@@ -52,7 +52,7 @@ import com.cmatuteortega.monoburro.model.Targets
 import com.cmatuteortega.monoburro.model.TortillaSize
 import com.cmatuteortega.monoburro.model.UserPrefs
 import com.cmatuteortega.monoburro.ui.BottomAction
-import com.cmatuteortega.monoburro.ui.OnboardingViewModel
+import com.cmatuteortega.monoburro.ui.AppViewModel
 import com.cmatuteortega.monoburro.ui.theme.LocalDarkTheme
 import com.cmatuteortega.monoburro.ui.theme.color
 import kotlin.math.roundToInt
@@ -136,7 +136,7 @@ fun RatioScreen(
                 )
                 FilledTonalIconButton(
                     onClick = { onCount(prefs.burritoCount + 1) },
-                    enabled = prefs.burritoCount < OnboardingViewModel.MAX_BURRITOS,
+                    enabled = prefs.burritoCount < AppViewModel.MAX_BURRITOS,
                     modifier = Modifier.size(56.dp),
                 ) { Text("+", fontSize = 28.sp, fontWeight = FontWeight.Bold) }
             }

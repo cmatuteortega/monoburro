@@ -42,7 +42,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,27 +56,24 @@ import com.cmatuteortega.monoburro.billing.MonoBilling
 import com.cmatuteortega.monoburro.model.Mode
 import com.cmatuteortega.monoburro.storage.Step
 import com.cmatuteortega.monoburro.storage.ThemeMode
-import com.cmatuteortega.monoburro.ui.screens.BatchScreen
 import com.cmatuteortega.monoburro.ui.screens.LandingScreen
 import com.cmatuteortega.monoburro.ui.screens.ProposalsScreen
 import com.cmatuteortega.monoburro.ui.screens.RatioScreen
 import com.cmatuteortega.monoburro.ui.screens.SwipeScreen
 import com.cmatuteortega.monoburro.ui.theme.MonoburroTheme
 import com.cmatuteortega.monoburro.ui.theme.isDark
-import kotlinx.coroutines.launch
 
 private val STEP_TITLES = mapOf(
     Step.SWIPE to "Your tastes",
     Step.RATIOS to "Your ratios",
     Step.PROPOSALS to "Pick a burrito",
-    Step.BATCH to "Batch plan",
 )
 
 /** Which mode sheet is open: the paywall (from the landing or the Burro badge) or Mono's own. */
 private enum class Sheet { PAYWALL_LANDING, PAYWALL, MONO }
 
 @Composable
-fun MonoburroApp(vm: OnboardingViewModel, onDarkChanged: (Boolean) -> Unit, onSubscribe: () -> Unit) {
+fun MonoburroApp(vm: AppViewModel, onDarkChanged: (Boolean) -> Unit, onSubscribe: () -> Unit) {
     val state by vm.state.collectAsStateWithLifecycle()
     val billing by vm.billingState.collectAsStateWithLifecycle()
     val dark = isDark(state.themeMode)
@@ -109,7 +105,18 @@ fun MonoburroApp(vm: OnboardingViewModel, onDarkChanged: (Boolean) -> Unit, onSu
                     onBurro = vm::chooseBurro,
                 )
             } else {
-                Onboarding(vm, onModeBadge = { sheet = if (state.mode == Mode.MONO) Sheet.MONO else Sheet.PAYWALL })
+                val onModeBadge = { sheet = if (state.mode == Mode.MONO) Sheet.MONO else Sheet.PAYWALL }
+                AnimatedContent(
+                    targetState = state.onboarded,
+                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                    label = "menu",
+                ) { onboarded ->
+                    if (onboarded) {
+                        MainMenu(vm, onModeBadge = onModeBadge, onPaywall = { sheet = Sheet.PAYWALL })
+                    } else {
+                        Onboarding(vm, onModeBadge = onModeBadge)
+                    }
+                }
             }
         }
 
@@ -135,11 +142,10 @@ fun MonoburroApp(vm: OnboardingViewModel, onDarkChanged: (Boolean) -> Unit, onSu
 }
 
 @Composable
-private fun Onboarding(vm: OnboardingViewModel, onModeBadge: () -> Unit) {
+private fun Onboarding(vm: AppViewModel, onModeBadge: () -> Unit) {
     val state by vm.state.collectAsStateWithLifecycle()
     val notice by vm.notice.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
     var confirmRestart by remember { mutableStateOf(false) }
 
     LaunchedEffect(notice) {
@@ -163,6 +169,7 @@ private fun Onboarding(vm: OnboardingViewModel, onModeBadge: () -> Unit) {
                 onBack = vm::back,
                 onTheme = vm::cycleTheme,
                 onRestart = { confirmRestart = true },
+                onBackToMenu = if (state.burritos.isNotEmpty()) vm::backToMenu else null,
             )
         },
     ) { padding ->
@@ -195,15 +202,8 @@ private fun Onboarding(vm: OnboardingViewModel, onModeBadge: () -> Unit) {
                 )
                 Step.PROPOSALS -> ProposalsScreen(
                     prefs = state.prefs,
-                    chosenId = state.chosen?.id,
                     onChoose = vm::choose,
                     onBackToSwipe = { vm.goTo(Step.SWIPE) },
-                )
-                Step.BATCH -> BatchScreen(
-                    proposal = state.chosen,
-                    prefs = state.prefs,
-                    onNoProposal = { vm.goTo(Step.PROPOSALS) },
-                    onNext = { scope.launch { snackbar.showSnackbar("After-cooking flow is coming soon 🌯") } },
                 )
             }
         }
@@ -213,7 +213,7 @@ private fun Onboarding(vm: OnboardingViewModel, onModeBadge: () -> Unit) {
         AlertDialog(
             onDismissRequest = { confirmRestart = false },
             title = { Text("Restart onboarding?") },
-            text = { Text("Your swipes, ratios and chosen burrito will be cleared.") },
+            text = { Text("Your swipes and ratios will be cleared.") },
             confirmButton = {
                 TextButton(onClick = { confirmRestart = false; vm.restart() }) { Text("Restart") }
             },
@@ -231,6 +231,7 @@ private fun TopBar(
     mode: Mode,
     onModeBadge: () -> Unit,
     onRestart: () -> Unit,
+    onBackToMenu: (() -> Unit)?,
 ) {
     var menu by remember { mutableStateOf(false) }
     Column(
@@ -254,19 +255,17 @@ private fun TopBar(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            IconButton(onClick = onTheme) {
-                Text(
-                    when (themeMode) {
-                        ThemeMode.SYSTEM -> "🌓"
-                        ThemeMode.LIGHT -> "☀️"
-                        ThemeMode.DARK -> "🌙"
-                    },
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            }
+            ThemeButton(themeMode, onTheme)
             Box {
                 IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = "More") }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    onBackToMenu?.let { back ->
+                        DropdownMenuItem(
+                            text = { Text("Back to my burritos") },
+                            leadingIcon = { Text("🌯") },
+                            onClick = { menu = false; back() },
+                        )
+                    }
                     DropdownMenuItem(
                         text = { Text("Restart onboarding") },
                         leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
@@ -296,6 +295,20 @@ private fun TopBar(
     }
 }
 
+/** 🌓 / ☀️ / 🌙: cycles system, light and dark. */
+@Composable
+internal fun ThemeButton(themeMode: ThemeMode, onTheme: () -> Unit) {
+    IconButton(onClick = onTheme) {
+        Text(
+            when (themeMode) {
+                ThemeMode.SYSTEM -> "🌓"
+                ThemeMode.LIGHT -> "☀️"
+                ThemeMode.DARK -> "🌙"
+            },
+            style = MaterialTheme.typography.titleLarge,
+        )
+    }
+}
 
 /**
  * The chosen mode's emoji, top right on every screen. Mono gets a gold ring;
@@ -303,7 +316,7 @@ private fun TopBar(
  * Mono sheet or the paywall.
  */
 @Composable
-private fun ModeBadge(mode: Mode, onClick: () -> Unit) {
+internal fun ModeBadge(mode: Mode, onClick: () -> Unit) {
     val cs = MaterialTheme.colorScheme
     val mono = mode == Mode.MONO
     Box(Modifier.padding(start = 4.dp, end = 4.dp)) {

@@ -1,8 +1,11 @@
 package com.cmatuteortega.monoburro.logic
 
 import com.cmatuteortega.monoburro.model.Feature
+import com.cmatuteortega.monoburro.model.Goal
 import com.cmatuteortega.monoburro.model.Mode
+import com.cmatuteortega.monoburro.model.Profile
 import com.cmatuteortega.monoburro.model.can
+import com.cmatuteortega.monoburro.model.effectiveGoal
 import com.cmatuteortega.monoburro.model.effectiveMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -29,10 +32,22 @@ class ModeTest {
     }
 
     @Test
-    fun everyFeatureIsBuiltForBothModesForNow() {
-        Feature.entries.forEach {
-            assertTrue(Mode.MONO.can(it))
-            assertTrue("$it should be available in Burro", Mode.BURRO.can(it))
-        }
+    fun monoCanDoEverything() {
+        Feature.entries.forEach { assertTrue(Mode.MONO.can(it)) }
+        Goal.entries.forEach { assertTrue(Mode.MONO.can(it)) }
+    }
+
+    @Test
+    fun onlyBulkAndCutAreMonoOnly() {
+        assertEquals(listOf(Feature.BULK_CUT), Feature.entries.filterNot { Mode.BURRO.can(it) })
+        assertEquals(listOf(Goal.EAT), Goal.entries.filter { Mode.BURRO.can(it) })
+    }
+
+    @Test
+    fun burroAlwaysEats() {
+        assertEquals(Goal.EAT, Profile().goal)
+        assertEquals(Goal.EAT, effectiveGoal(Goal.BULK, Mode.BURRO))
+        assertEquals(Goal.EAT, effectiveGoal(Goal.CUT, Mode.BURRO))
+        assertEquals(Goal.CUT, effectiveGoal(Goal.CUT, Mode.MONO))
     }
 }

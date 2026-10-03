@@ -39,6 +39,7 @@ private val MONO_PERKS = listOf(
     "🧠" to ("AI burrito chef" to "Proposals written by AI from your swipes, your macros and what's left in the fridge."),
     "🎯" to ("Macro coach" to "Hit your kcal or protein target in every burrito; AI tunes the grams for you."),
     "🛒" to ("Smart shopping list" to "Batches merged into one list with real pack sizes, so nothing goes to waste."),
+    "💪" to ("Bulk & Cut modes" to "Daily macros tuned for a surplus or a deficit. Burros just eat."),
     "🔁" to ("Endless remixes" to "New fillings every batch. Burrito fatigue isn't real, but just in case."),
 )
 

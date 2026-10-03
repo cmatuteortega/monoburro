@@ -29,11 +29,40 @@ Then the onboarding:
    burrito count (default 12), tortilla size, and an optional kcal or protein
    target per burrito.
 3. **Pick a burrito**: three proposals (Classic, High protein, Veggie-forward)
-   with ingredients, grams and macros per burrito.
-4. **Batch plan**: the chosen burrito scaled to the batch, in grams plus a
-   friendly unit (cans, cups, avocados…). *Next: after cooking* is a stub.
+   with ingredients, grams and macros per burrito. Picking one saves it and
+   opens the main menu on it.
 
-"Restart onboarding" is in the ⋮ menu; 🌓 cycles system / light / dark.
+## Main menu
+
+Four tabs on a bottom bar:
+
+- **🌯 Burritos**: the saved burritos. *New burrito* makes another one, either
+  from your tastes (the three proposals again) or from scratch (an empty
+  tortilla). Opening one shows its macros (and its share of your daily goal),
+  what's inside per burrito and for the whole batch (grams + friendly unit),
+  and lets you change how many, the tortilla size (filling scales to fit), the
+  proportions (same rebalancing sliders as the onboarding, keeping the total
+  filling weight), the grams of each ingredient (±5 g), add or remove
+  ingredients, rename, change its emoji, duplicate or delete it. 🛒 on an
+  ingredient, or *Add all to shopping list*, sends it to the list.
+- **🛒 Shopping**: everything added from burritos, grouped by aisle. Adding
+  the same thing again merges (amounts add up, "For …" lists the burritos);
+  ticked items count as bought, so they don't merge. Type in extras by hand.
+- **🎯 Goals**: daily kcal / protein / carbs / fat, suggested from the profile
+  (Mifflin–St Jeor × activity; Bulk +10 %, Cut −20 %, Eat maintenance) or set
+  by hand; burritos per day, the per-burrito budget (and a button to aim new
+  proposals at it), and how each saved burrito fits.
+- **👤 Profile**: mode, goal, age, weight, height, sex, activity, favourite
+  food (and your ⭐ fillings), and *Redo the taste quiz*.
+
+The goal is **Eat** by default, and it's the only one in Burro mode: **Bulk**
+and **Cut** are Mono features (`Feature.BULK_CUT`). If Mono lapses, a Bulk or
+Cut pick runs as Eat until it comes back.
+
+"Redo taste quiz" (⋮ menu or Profile) clears swipes and ratios only; burritos,
+shopping list, goals and profile stay. 🌓 cycles system / light / dark. Saved
+state from the old four-step onboarding (which ended on a batch plan) is
+migrated: that burrito becomes the first one in the library.
 
 ## Billing (Mono subscription)
 
@@ -54,14 +83,17 @@ on the Mono sheet to try the downgrade).
 ```
 app/src/main/java/com/cmatuteortega/monoburro/
   model/        Ingredient, UserPrefs (+ Ratios, TortillaSize, Targets), Proposal,
+                Burrito + ShoppingItem, Profile (+ Goal, MacroGoals),
                 Mode (Mono / Burro, Feature gating)
   billing/      MonoBilling: Google Play subscription
   data/         Ingredients.kt: the 40 seeded fillings + the fixed flour tortilla
   logic/        Macros, Scaling (batch + friendly units), RatioMath (sliders),
-                Diet, Deck (swipe order and quotas), GenerateProposals
+                Diet, Deck (swipe order and quotas), GenerateProposals,
+                Burritos (editing), Shopping (merging), Nutrition (goals)
   storage/      AppState + StateStore (SharedPreferences)
-  ui/           OnboardingViewModel, MonoburroApp (shell, mode badge), ModeSheets
-                (paywall, Mono sheet), screens/ (Landing + the four steps), theme/
+  ui/           AppViewModel, MonoburroApp (shell, onboarding, mode badge), MainMenu
+                (bottom bar), ModeSheets (paywall, Mono sheet), screens/ (Landing,
+                the three onboarding steps, the four tabs + burrito detail), theme/
 ```
 
 Proposal logic is deterministic and lives behind `ProposalGenerator` in
@@ -77,7 +109,7 @@ ratios, and then nudges portions towards any kcal / protein target.
 JDK 17 and the Android SDK (compileSdk 36):
 
 ```sh
-./gradlew testDebugUnitTest lintDebug   # JUnit: macros, scaling, ratios, deck, proposals, modes
+./gradlew testDebugUnitTest lintDebug   # JUnit: macros, scaling, ratios, deck, proposals, modes, burritos, shopping, nutrition
 ./gradlew installDebug
 ```
 

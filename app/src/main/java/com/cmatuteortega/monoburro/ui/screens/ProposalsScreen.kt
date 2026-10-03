@@ -30,26 +30,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cmatuteortega.monoburro.data.TORTILLA
 import com.cmatuteortega.monoburro.data.ingredient
+import com.cmatuteortega.monoburro.logic.emoji
 import com.cmatuteortega.monoburro.logic.generateProposals
 import com.cmatuteortega.monoburro.model.Proposal
-import com.cmatuteortega.monoburro.model.ProposalKind
 import com.cmatuteortega.monoburro.model.UserPrefs
 import com.cmatuteortega.monoburro.ui.BottomAction
 import com.cmatuteortega.monoburro.ui.MacroRow
 import kotlin.math.roundToInt
 
-private fun ProposalKind.emoji() = when (this) {
-    ProposalKind.CLASSIC -> "🌯"
-    ProposalKind.HIGH_PROTEIN -> "💪"
-    ProposalKind.VEGGIE_FORWARD -> "🥦"
-}
-
 @Composable
 fun ProposalsScreen(
     prefs: UserPrefs,
-    chosenId: String?,
     onChoose: (Proposal) -> Unit,
     onBackToSwipe: () -> Unit,
+    actionLabel: (Proposal) -> String = { "Batch-cook ${it.name.lowercase()} →" },
 ) {
     val proposals = remember(prefs) { generateProposals(prefs) }
     // Only the tortilla means nothing liked survived: send the user back to the deck.
@@ -77,7 +71,7 @@ fun ProposalsScreen(
     }
 
     var selected by remember(proposals) {
-        mutableStateOf(proposals.firstOrNull { it.id == chosenId }?.id ?: proposals.first().id)
+        mutableStateOf(proposals.first().id)
     }
     Column(Modifier.fillMaxSize()) {
         LazyColumn(
@@ -99,7 +93,7 @@ fun ProposalsScreen(
             }
         }
         val pick = proposals.first { it.id == selected }
-        BottomAction("Batch-cook ${pick.name.lowercase()} →", onClick = { onChoose(pick) })
+        BottomAction(actionLabel(pick), onClick = { onChoose(pick) })
     }
 }
 

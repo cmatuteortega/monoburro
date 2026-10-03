@@ -6,7 +6,8 @@ import kotlinx.serialization.json.Json
 /** Local-only persistence: the whole [AppState] as JSON in SharedPreferences. */
 class StateStore(context: Context) {
     private val prefs = context.getSharedPreferences("monoburro", Context.MODE_PRIVATE)
-    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+    // coerceInputValues: an enum value from an older version (e.g. Step.BATCH) becomes the default.
+    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true; coerceInputValues = true }
 
     fun load(): AppState = prefs.getString(KEY, null)
         ?.let { runCatching { json.decodeFromString(AppState.serializer(), it) }.getOrNull() }
